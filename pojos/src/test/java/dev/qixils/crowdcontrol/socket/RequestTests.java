@@ -10,7 +10,7 @@ import java.time.Duration;
 public class RequestTests {
 	@Test
 	public void postProcessorTest() {
-		Request.Target target = ByteAdapter.GSON.fromJson("{\"originID\":\"twitch_12345\",\"profile\":\"TWITCH\"}", Request.Target.class);
+		Request.Target target = JsonHolder.GSON.fromJson("{\"originID\":\"twitch_12345\",\"profile\":\"TWITCH\"}", Request.Target.class);
 		Assertions.assertEquals("12345", target.getId(), String.valueOf(target));
 	}
 
@@ -65,9 +65,9 @@ public class RequestTests {
 //				"Hello",
 //				10,
 //				Duration.ofSeconds(10),
-//				new Request.Target[]{
-//						new Request.Target.Builder().id("493").name("epic streamer 493").login("streamer").avatar("https://i.qixils.dev/favicon.png").clone().build().toBuilder().build(),
-//						new Request.Target.Builder().clone().build().toBuilder().build()
+//				new Request.RequestTarget[]{
+//						new Request.RequestTarget.Builder().id("493").name("epic streamer 493").login("streamer").avatar("https://i.qixils.dev/favicon.png").clone().build().toBuilder().build(),
+//						new Request.RequestTarget.Builder().clone().build().toBuilder().build()
 //				},
 //				new Object[]{5d});
 		Request.Target source = new Request.Target.Builder().id("493").name("epic streamer 493").login("streamer").avatar("https://i.qixils.dev/favicon.png").service("TWITCH").clone().build();

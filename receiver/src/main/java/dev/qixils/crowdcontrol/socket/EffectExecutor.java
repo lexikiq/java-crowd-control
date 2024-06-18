@@ -4,6 +4,7 @@ import com.google.gson.JsonParseException;
 import dev.qixils.crowdcontrol.RequestManager;
 import dev.qixils.crowdcontrol.exceptions.ExceptionUtil;
 import dev.qixils.crowdcontrol.exceptions.NoApplicableTarget;
+import dev.qixils.crowdcontrol.util.OptionalUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ final class EffectExecutor {
 	private final @NotNull Set<@NotNull Id> notVisible = new HashSet<>();
 	private final @NotNull Set<@NotNull Id> notSelectable = new HashSet<>();
 	private boolean loggedIn = false;
-	private Request.@Nullable Source player = null;
+	private @Nullable RequestSource player = null;
 	private final @NotNull List<Consumer<SocketManager>> onLoginListeners;
 
 	EffectExecutor(SocketThread socketThread) throws IOException {
@@ -58,17 +59,17 @@ final class EffectExecutor {
 		this.onLoginListeners = Collections.unmodifiableList(csm.onLoginListeners);
 	}
 
-	Request.@NotNull Source getSource() {
+	@NotNull RequestSource getSource() {
 		if (player == null)
-			player = new Request.Source.Builder().ip(socket.getInetAddress()).build();
+			player = RequestSource.builder().set(RequestSource.IP, socket.getInetAddress()).build();
 		return player;
 	}
 
 	void run() throws IOException {
 		// get incoming data
-		Request request;
+		RequestNew request;
 		try {
-			request = JsonObject.fromInputStream(input, Request::fromJSON);
+			request = JsonObject.fromInputStream(input, RequestNew.class);
 		} catch (JsonParseException e) {
 			logger.error("Failed to parse JSON from socket", e);
 			return;
@@ -87,32 +88,37 @@ final class EffectExecutor {
 			return;
 		}
 
-		request.setOriginatingSocket(socketThread);
+		request.set(RequestNew.SOCKET, socketThread);
 
-		if (request.getType() == Request.Type.PLAYER_INFO) {
-			Request.Source.Builder source = getSource().toBuilder();
-			if (request.getPlayer() != null)
-				source.target(request.getPlayer());
-			else if (request.getTargets().length == 1)
-				source.target(request.getTargets()[0]);
+		if (request.getOrNull(RequestNew.TYPE) == RequestType.PLAYER_INFO) {
+			JsonHolderBuilder<RequestSource> source = getSource().toBuilder();
+
+			OptionalUtils.or(
+				() -> request.get(RequestNew.PLAYER),
+				() -> request.get(RequestNew.TARGETS).map(targets -> targets.length == 1 ? targets[0] : null)
+			).ifPresent(target -> request.set(RequestSource.TARGET, target));
+
 			player = source.build();
 		} else if (player != null) {
-			request.setSource(getSource());
+			request.set(RequestNew.SOURCE, getSource());
 		}
 
-		if (request.getType() == Request.Type.KEEP_ALIVE) {
-			request.buildResponse().packetType(Response.PacketType.KEEP_ALIVE).send();
+		if (request.getOrNull(RequestNew.TYPE) == RequestType.KEEP_ALIVE) {
+			request.buildResponse().set(ResponseNew.TYPE, ResponseType.KEEP_ALIVE).build().send();
 			return;
 		}
 
 		// login handling
 		if (!loggedIn && password != null && socketThread != null) {
-			if (request.getType() != Request.Type.LOGIN) {
-				request.buildResponse().type(Response.ResultType.NOT_READY).message("Client has not logged in").send();
-			} else if (password.equalsIgnoreCase(request.getPassword()) || password.equalsIgnoreCase(request.getMessage())) {
+			if (request.getOrNull(RequestNew.TYPE) != RequestType.LOGIN) {
+				request.buildResponse()
+					.set(ResponseNew.STATUS, ResponseStatus.NOT_READY)
+					.set(ResponseNew.MESSAGE, "Client has not logged in")
+					.build().send();
+			} else if (password.equalsIgnoreCase(request.getOrNull(RequestNew.PASSWORD)) || password.equalsIgnoreCase(request.getOrNull(RequestNew.MESSAGE))) {
 				logger.info("New client successfully logged in (" + socketThread.getDisplayName() + ")");
-				request.buildResponse().packetType(Response.PacketType.LOGIN_SUCCESS).message("Successfully logged in").send();
-				player = getSource().toBuilder().login(request.getLogin()).build();
+				request.buildResponse().set(ResponseNew.TYPE, ResponseType.LOGIN_SUCCESS).set(ResponseNew.MESSAGE, "Successfully logged in").build().send();
+				player = getSource().toBuilder().set(RequestSource.LOGIN, request.getOrNull(RequestNew.LOGIN)).build();
 				loggedIn = true;
 				for (Consumer<SocketManager> onLoginListener : onLoginListeners) {
 					try {
@@ -134,10 +140,10 @@ final class EffectExecutor {
 				crowdControl.handle(request);
 			} catch (Throwable exc) {
 				if (ExceptionUtil.isCause(NoApplicableTarget.class, exc)) {
-					request.buildResponse().type(Response.ResultType.FAILURE).message("Streamer(s) unavailable").send();
+					request.buildResponse().set(ResponseNew.STATUS, ResponseStatus.FAILURE).set(ResponseNew.MESSAGE, "Streamer(s) unavailable").build().send();
 				} else {
 					logger.error("Request handler threw an exception", exc);
-					request.buildResponse().type(Response.ResultType.FAILURE).message("Request handler threw an exception").send();
+					request.buildResponse().set(ResponseNew.STATUS, ResponseStatus.FAILURE).set(ResponseNew.MESSAGE, "Request handler threw an exception").build().send();
 				}
 			}
 		});
@@ -148,13 +154,13 @@ final class EffectExecutor {
 	}
 
 	@Nullable
-	private Response update(@NotNull Response response) {
+	private ResponseNew update(@NotNull ResponseNew response) {
 		// determine if this response should be sent
-		if (response.getPacketType() == Response.PacketType.EFFECT_STATUS) {
+		if (response.getOrNull(ResponseNew.TYPE) == ResponseType.EFFECT_STATUS) {
 			// create variables
-			Response.Builder builder = response.toBuilder();
+			JsonHolderBuilder<ResponseNew> builder = response.toBuilder();
 			// get variables
-			IdType type = builder.idType();
+			IdType type = builder.get(ResponseNew.ID_TYPE);
 			// create filter to remove IDs whose state has not changed
 			// (return true to remove, i.e. the ID is already in the set, and false to keep)
 			// TODO: this is so verbose

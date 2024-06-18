@@ -1,6 +1,6 @@
 package dev.qixils.crowdcontrol;
 
-import dev.qixils.crowdcontrol.socket.Request;
+import dev.qixils.crowdcontrol.socket.RequestNew;
 import dev.qixils.crowdcontrol.socket.SocketManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -19,5 +19,5 @@ public interface RequestManager extends ServiceManager {
 	 * @since 3.3.0
 	 */
 	@ApiStatus.AvailableSince("3.3.0")
-	void handle(@NotNull Request request);
+	void handle(@NotNull RequestNew request);
 }

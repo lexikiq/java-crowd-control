@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 class ByteAdapter<T extends ByteObject> extends TypeAdapter<T> {
+	@Deprecated
 	static final @NotNull Gson GSON = new GsonBuilder()
 			.registerTypeAdapterFactory(new PostProcessor())
 			.registerTypeAdapter(Request.Type.class, new ByteAdapter<>(Request.Type::from))

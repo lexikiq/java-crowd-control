@@ -28,6 +28,8 @@ import static dev.qixils.crowdcontrol.util.StringUtils.repr;
  * @since 1.0.0
  */
 @ApiStatus.AvailableSince("1.0.0")
+@Deprecated
+@ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
 public class Request implements JsonObject, Respondable {
 	private static final Logger logger = LoggerFactory.getLogger("CrowdControl/Request");
 	private transient @Nullable SocketManager originatingSocket;
@@ -38,7 +40,7 @@ public class Request implements JsonObject, Respondable {
 	private String effect;
 	private String message;
 	private String viewer;
-	// TODO: private Target[] viewers;
+	// TODO: private RequestTarget[] viewers;
 	@Nullable
 	private Integer cost;
 	private Target[] targets;
@@ -149,7 +151,7 @@ public class Request implements JsonObject, Respondable {
 	@ApiStatus.AvailableSince("1.0.0")
 	public static Request fromJSON(@NotNull String json) throws JsonSyntaxException {
 		ExceptionUtil.validateNotNull(json, "json");
-		logger.debug("Incoming Packet: {}", json);
+		logger.debug("Incoming JsonHolder: {}", json);
 		return ByteAdapter.GSON.fromJson(json, Request.class);
 	}
 
@@ -808,7 +810,7 @@ public class Request implements JsonObject, Respondable {
 
 		@Override
 		public String toString() {
-			return "Target{" +
+			return "RequestTarget{" +
 					"id=" + repr(id) +
 					", name=" + repr(name) +
 					", login=" + repr(login) +

@@ -1,5 +1,6 @@
 package dev.qixils.crowdcontrol.socket;
 
+import com.google.gson.reflect.TypeToken;
 import dev.qixils.crowdcontrol.exceptions.ExceptionUtil;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,7 @@ import java.util.function.Function;
  * @since 3.3.0
  */
 @ApiStatus.AvailableSince("3.3.0")
+@Deprecated // TODO: determine this class's role in 4.0.0 (it's currently unused)
 public interface JsonObject {
 	/**
 	 * Obtains a JSON object from an input stream of 0x00-terminated json strings.
@@ -73,6 +75,42 @@ public interface JsonObject {
 
 		// convert to POJO
 		return jsonMapper.apply(inJSON);
+	}
+
+	/**
+	 * Obtains a JSON object from an input stream of 0x00-terminated json strings.
+	 *
+	 * @param input an input stream
+	 * @param type  type token for the class to deserialize
+	 * @param <T>   the type of the POJO
+	 * @return the parsed POJO
+	 * @throws IOException if an I/O error occurs in the input stream
+	 * @since 4.0.0
+	 */
+	@Nullable
+	@CheckReturnValue
+	@ApiStatus.Internal
+	@ApiStatus.AvailableSince("4.0.0")
+	static <T> T fromInputStream(@NotNull InputStream input, @NotNull TypeToken<T> type) throws IOException {
+		return fromInputStream(input, str -> JsonHolder.GSON.fromJson(str, type));
+	}
+
+	/**
+	 * Obtains a JSON object from an input stream of 0x00-terminated json strings.
+	 *
+	 * @param input an input stream
+	 * @param type  class to deserialize
+	 * @param <T>   the type of the POJO
+	 * @return the parsed POJO
+	 * @throws IOException if an I/O error occurs in the input stream
+	 * @since 4.0.0
+	 */
+	@Nullable
+	@CheckReturnValue
+	@ApiStatus.Internal
+	@ApiStatus.AvailableSince("4.0.0")
+	static <T> T fromInputStream(@NotNull InputStream input, @NotNull Class<T> type) throws IOException {
+		return fromInputStream(input, str -> JsonHolder.GSON.fromJson(str, type));
 	}
 
 	/**

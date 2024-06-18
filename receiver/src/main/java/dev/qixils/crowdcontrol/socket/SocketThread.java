@@ -112,11 +112,11 @@ final class SocketThread extends Thread implements SocketManager {
 	}
 
 	@Override
-	public void shutdown(@Nullable Request cause, @Nullable String reason) throws IOException {
+	public void shutdown(@Nullable RequestNew cause, @Nullable String reason) throws IOException {
 		if (!running) return;
 		running = false;
 		if (!socket.isClosed()) {
-			try {Response.ofDisconnectMessage(this, reason).rawSend();}
+			try {ResponseNew.ofDisconnectMessage(this, reason).rawSend();}
 			catch (IOException exc) {logger.debug("Ignoring exception thrown by socket; likely just a result of the socket terminating");}
 			try {socket.close();}
 			catch (IOException exc) {logger.debug("Ignoring exception thrown by socket; likely just a result of the socket terminating");}

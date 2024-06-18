@@ -45,7 +45,7 @@ public interface SocketManager extends Respondable {
 	 *
 	 * @throws IOException an I/O exception occurred while trying to close the socket
 	 * @see #shutdown(String)
-	 * @see #shutdown(Request, String)
+	 * @see #shutdown(RequestNew, String)
 	 * @since 3.0.0
 	 * @deprecated providing error messages via {@link #shutdown(String)} is recommended
 	 */
@@ -76,7 +76,7 @@ public interface SocketManager extends Respondable {
 	 * @since 3.1.0
 	 */
 	@ApiStatus.AvailableSince("3.1.0")
-	void shutdown(@Nullable Request cause, @Nullable String reason) throws IOException;
+	void shutdown(@Nullable RequestNew cause, @Nullable String reason) throws IOException;
 
 	/**
 	 * Sets a consumer to be called when a new {@link SocketManager Crowd Control instance}

@@ -3,6 +3,7 @@ package dev.qixils.crowdcontrol;
 import dev.qixils.crowdcontrol.exceptions.ExceptionUtil;
 import dev.qixils.crowdcontrol.exceptions.NoApplicableTarget;
 import dev.qixils.crowdcontrol.socket.Request;
+import dev.qixils.crowdcontrol.socket.RequestNew;
 import dev.qixils.crowdcontrol.socket.Response;
 import dev.qixils.crowdcontrol.socket.SocketManager;
 import org.jetbrains.annotations.ApiStatus;
@@ -411,7 +412,7 @@ public final class CrowdControl implements SocketManager, RequestManager {
 	 */
 	@ApiStatus.AvailableSince("1.0.0")
 	@ApiStatus.Internal
-	public void handle(@NotNull Request request) {
+	public void handle(@NotNull RequestNew request) {
 		for (Function<Request, CheckResult> check : globalChecks) {
 			if (check.apply(request) == CheckResult.DISALLOW) {
 				request.buildResponse().type(Response.ResultType.FAILURE).message("The game is unavailable").send();
@@ -443,7 +444,7 @@ public final class CrowdControl implements SocketManager, RequestManager {
 	 * Shuts down the internal connection to the Crowd Control server.
 	 *
 	 * @see #shutdown(String)
-	 * @see #shutdown(Request, String)
+	 * @see SocketManager#shutdown(RequestNew, String)
 	 * @deprecated providing error messages via {@link #shutdown(String)} is recommended
 	 * @since 1.0.0
 	 */
@@ -484,7 +485,7 @@ public final class CrowdControl implements SocketManager, RequestManager {
 	 * @since 3.1.0
 	 */
 	@ApiStatus.AvailableSince("3.1.0")
-	public void shutdown(@Nullable Request cause, @Nullable String reason) {
+	public void shutdown(@Nullable RequestNew cause, @Nullable String reason) {
 		try {
 			socketManager.shutdown(cause, reason);
 		} catch (IOException e) {

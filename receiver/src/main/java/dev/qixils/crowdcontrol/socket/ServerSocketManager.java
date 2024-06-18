@@ -98,7 +98,7 @@ public final class ServerSocketManager implements SocketManager {
 
 	@Override
 	@ApiStatus.AvailableSince("3.1.0")
-	public void shutdown(@Nullable Request cause, @Nullable String reason) throws IOException {
+	public void shutdown(@Nullable RequestNew cause, @Nullable String reason) throws IOException {
 		if (!running) return;
 		running = false;
 		for (SocketThread socketThread : getSocketThreads()) {

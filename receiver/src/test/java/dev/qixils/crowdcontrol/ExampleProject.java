@@ -208,7 +208,7 @@ abstract class Game {
 	}
 
 	/**
-	 * Converts a Crowd Control Target (a streamer) to a Player, if online.
+	 * Converts a Crowd Control RequestTarget (a streamer) to a Player, if online.
 	 * Used when running the Crowd Control library in server-mode.
 	 */
 	Collection<Player> getPlayersFromTarget(Request.Target target) {
@@ -243,7 +243,7 @@ abstract class Game {
 			if (!targetedPlayers.isEmpty()) {
 				players.addAll(targetedPlayers);
 			} else {
-				logger.warn("Target {} is not online", target);
+				logger.warn("RequestTarget {} is not online", target);
 			}
 		}
 

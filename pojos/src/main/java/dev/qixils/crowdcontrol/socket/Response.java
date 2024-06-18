@@ -27,6 +27,8 @@ import static dev.qixils.crowdcontrol.util.StringUtils.repr;
  * @since 1.0.0
  */
 @ApiStatus.AvailableSince("1.0.0")
+@Deprecated
+@ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
 public class Response implements JsonObject {
 	private static final @NotNull Logger logger = LoggerFactory.getLogger("CrowdControl/Response");
 	@SerializedName("type")
@@ -378,7 +380,7 @@ public class Response implements JsonObject {
 	 * @return true if this response marks the end of a series of responses
 	 * @since 3.3.0
 	 */
-	@ApiStatus.AvailableSince("3.3.0") // TODO unit test this and the PacketType method
+	@ApiStatus.AvailableSince("3.3.0") // TODO unit test this and the ObjectTypes method
 	public boolean isTerminating() throws IllegalStateException {
 		if (packetType != PacketType.EFFECT_RESULT)
 			throw new IllegalStateException("This response is not an effect result");

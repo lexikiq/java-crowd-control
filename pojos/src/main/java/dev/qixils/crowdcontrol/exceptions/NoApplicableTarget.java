@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
  * @since 3.0.0
  */
 @ApiStatus.AvailableSince("3.0.0")
+@Deprecated
 public final class NoApplicableTarget extends CrowdControlException {
 
 	/**
