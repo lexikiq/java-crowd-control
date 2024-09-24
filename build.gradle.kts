@@ -20,7 +20,10 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    implementation(libs.gson)
+    // implementation(libs.gson)
+    implementation(libs.jackson.core) // todo: maybe unnecessary
+    implementation(libs.jackson.annotations) // todo: maybe unnecessary
+    implementation(libs.jackson.databind)
     implementation(libs.websocket)
     implementation(libs.jwt)
     api(libs.annotations)
