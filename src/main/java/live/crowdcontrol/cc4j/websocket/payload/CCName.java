@@ -67,7 +67,7 @@ public class CCName implements Comparable<CCName> {
 	}
 
 	public static class CCNameAdapter extends StdDeserializer<CCName> {
-		protected CCNameAdapter() {
+		public CCNameAdapter() {
 			super(CCName.class);
 		}
 

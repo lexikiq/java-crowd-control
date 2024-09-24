@@ -4,12 +4,13 @@ import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import live.crowdcontrol.cc4j.CCEventType;
 import live.crowdcontrol.cc4j.CCPlayer;
+import live.crowdcontrol.cc4j.CrowdControl;
+import live.crowdcontrol.cc4j.util.EventManager;
 import live.crowdcontrol.cc4j.websocket.data.SubscriptionData;
-import live.crowdcontrol.cc4j.websocket.payload.LoginSuccessPayload;
-import live.crowdcontrol.cc4j.websocket.payload.PublicEffectPayload;
-import live.crowdcontrol.cc4j.websocket.payload.SubscriptionResultPayload;
-import live.crowdcontrol.cc4j.websocket.payload.WhoAmIPayload;
+import live.crowdcontrol.cc4j.websocket.payload.*;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.jetbrains.annotations.ApiStatus;
@@ -23,6 +24,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,6 +36,7 @@ public class ConnectedPlayer extends WebSocketClient implements CCPlayer {
 	private static final ObjectMapper JACKSON;
 	private static final Logger log = LoggerFactory.getLogger(ConnectedPlayer.class);
 	private final @NotNull Set<String> subscriptions = new HashSet<>();
+	private final @NotNull EventManager eventManager;
 	private final @NotNull UUID uuid;
 	private final @NotNull Path tokenPath;
 	private @Nullable String connectionID;
@@ -43,22 +47,27 @@ public class ConnectedPlayer extends WebSocketClient implements CCPlayer {
 	static {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		SimpleModule module = new SimpleModule("CrowdControlSerializers");
+		module.addDeserializer(CCName.class, new CCName.CCNameAdapter());
+		mapper.registerModule(module);
 		JACKSON = mapper;
 	}
 
 	// WebSocket Impl
 
-	public ConnectedPlayer(@NotNull UUID uuid, @NotNull Path dataFolder) {
+	public ConnectedPlayer(@NotNull UUID uuid, @NotNull CrowdControl parent) {
 		super(URI.create("wss://pubsub.crowdcontrol.live/"));
 
 		this.uuid = uuid;
-		this.tokenPath = dataFolder.resolve(uuid + ".token");
+		this.tokenPath = parent.getDataFolder().resolve(uuid + ".token");
+		this.eventManager = new EventManager(parent);
 
 		loadToken();
 	}
 
 	@Override
 	public void onOpen(ServerHandshake handshake) {
+		eventManager.dispatch(CCEventType.CONNECTION);
 		send(new SocketRequest("whoami"));
 	}
 
@@ -114,30 +123,38 @@ public class ConnectedPlayer extends WebSocketClient implements CCPlayer {
 		}
 	}
 
-	public void setToken(String token) {
+	public boolean setToken(String token) {
 		try {
 			this.userToken = JACKSON.readValue(JWT.decode(token).getPayload(), UserToken.class);
+
+			if (Instant.ofEpochSecond(this.userToken.exp).plus(1, ChronoUnit.DAYS).isBefore(Instant.now())) {
+				log.warn("User {}'s auth token has expired", uuid);
+				this.userToken = null;
+				return false;
+			}
 		} catch (JsonProcessingException e) {
 			log.warn("Failed to set token {}", token, e);
-			return;
+			return false;
 		}
 		this.token = token;
 		subscribe();
 
 		// TODO: emit login event
+		return true;
 	}
 
 
-	private void loadToken() {
+	private boolean loadToken() {
 		if (!Files.exists(tokenPath))
-			return;
+			return false;
 
 		try {
 			try (BufferedReader reader = Files.newBufferedReader(tokenPath)) {
-				setToken(reader.readLine());
+				return setToken(reader.readLine());
 			}
 		} catch (Exception e) {
 			log.warn("Failed to read user {} token", uuid, e);
+			return false;
 		}
 	}
 
@@ -176,44 +193,28 @@ public class ConnectedPlayer extends WebSocketClient implements CCPlayer {
 
 	// True Boilerplate
 
-	/**
-	 * Gets the unique ID that represents an in-game player.
-	 *
-	 * @return unique ID
-	 */
 	@NotNull
 	public UUID getUuid() {
 		return uuid;
 	}
 
-	/**
-	 * Gets the ID of this connection.
-	 * Used primarily for authentication.
-	 *
-	 * @return connection ID
-	 */
 	@Nullable
 	public String getConnectionID() {
 		return connectionID;
 	}
 
-	/**
-	 * Gets the user's token used for making authenticated requests.
-	 *
-	 * @return auth token
-	 */
 	@Nullable
 	public String getToken() {
 		return token;
 	}
 
-	/**
-	 * Gets the user's profile as decoded from their auth token.
-	 *
-	 * @return user profile
-	 */
 	@Nullable
 	public UserToken getUserToken() {
 		return userToken;
+	}
+
+	@Override
+	public @NotNull EventManager getEventManager() {
+		return eventManager;
 	}
 }

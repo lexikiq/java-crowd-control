@@ -1,5 +1,6 @@
 package live.crowdcontrol.cc4j;
 
+import live.crowdcontrol.cc4j.util.EventManager;
 import live.crowdcontrol.cc4j.websocket.UserToken;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,4 +41,10 @@ public interface CCPlayer {
 	 */
 	@Nullable
 	UserToken getUserToken();
+
+	/**
+	 * Gets the manager which handles distributing events.
+	 */
+	@NotNull
+	EventManager getEventManager();
 }
